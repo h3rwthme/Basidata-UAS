@@ -9,8 +9,28 @@ Prinsip penyusunan:
 - Bagian yang disebut pada narasi tetapi belum memiliki data/atribut eksplisit dicatat sebagai gap requirement, bukan dimasukkan ke ERD inti.
 - Tipe data pada blok Mermaid hanya penanda teknis agar diagram bisa dibaca, bukan tambahan requirement dari studi kasus.
 - Jika suatu relasi tidak memiliki FK eksplisit pada daftar data, relasi tersebut tidak dipaksakan di ERD inti.
+- Revisi tambahan: `SEKOLAH`, `PERUSAHAAN_PENGANTARAN`, dan `KURIR` ditambahkan karena narasi studi kasus menyebut beberapa TK/PAUD, kerja sama dengan perusahaan pengantaran makanan, dan kurir pengantar.
 
 ## Entitas, PK, dan FK
+
+### SEKOLAH
+
+PK:
+
+- `kode_sekolah`
+
+FK:
+
+- Tidak ada
+
+Atribut:
+
+- `nama_sekolah`
+
+Catatan:
+
+- Entitas ini ditambahkan karena studi kasus menyebut program berjalan pada beberapa TK/PAUD.
+- Relasi paling sederhana adalah satu sekolah memiliki banyak anak.
 
 ### ORANG_TUA
 
@@ -36,10 +56,11 @@ PK:
 
 FK:
 
-- Tidak ada FK eksplisit pada daftar data.
+- `kode_sekolah` -> SEKOLAH.`kode_sekolah`
 
 Atribut:
 
+- `kode_sekolah`
 - `nama`
 - `tanggal_lahir`
 - `kelas`
@@ -59,10 +80,11 @@ PK:
 
 FK:
 
-- Tidak ada
+- `kode_sekolah` -> SEKOLAH.`kode_sekolah`
 
 Atribut:
 
+- `kode_sekolah`
 - `nama`
 - `kelas_yang_diawasi`
 
@@ -186,6 +208,45 @@ Atribut:
 - `lemak`
 - `catatan`
 
+### PERUSAHAAN_PENGANTARAN
+
+PK:
+
+- `kode_perusahaan`
+
+FK:
+
+- Tidak ada
+
+Atribut:
+
+- `nama_perusahaan`
+
+Catatan:
+
+- Entitas ini ditambahkan karena studi kasus menyebut sekolah bekerja sama dengan perusahaan pengantaran makanan.
+- Satu sekolah dapat bekerja sama dengan banyak perusahaan pengantaran, dan satu perusahaan dapat bekerja sama dengan banyak sekolah.
+
+### KURIR
+
+PK:
+
+- `kode_kurir`
+
+FK:
+
+- `kode_perusahaan` -> PERUSAHAAN_PENGANTARAN.`kode_perusahaan`
+
+Atribut:
+
+- `kode_perusahaan`
+- `nama_kurir`
+
+Catatan:
+
+- Entitas ini ditambahkan karena studi kasus menyebut diperlukan kurir untuk mengantar makanan ke rumah siswa.
+- Kurir direlasikan ke perusahaan pengantaran, bukan langsung ke sekolah.
+
 ## ERD Mermaid
 
 Catatan membaca diagram:
@@ -193,9 +254,12 @@ Catatan membaca diagram:
 - Entitas dan atribut tetap hanya memakai data yang disebut pada studi kasus.
 - Relasi digambar berdasarkan FK yang tersedia dan narasi yang eksplisit pada studi kasus.
 - Diagram ini tidak menambahkan atribut baru seperti `kode_orang_tua` pada ANAK atau tabel baru seperti KELAS/PEMILIHAN_MENU.
+- Tambahan `SEKOLAH`, `PERUSAHAAN_PENGANTARAN`, dan `KURIR` berasal dari narasi pengantaran pada studi kasus.
 
 ```mermaid
 erDiagram
+    SEKOLAH ||--o{ ANAK : memiliki_siswa
+    SEKOLAH ||--o{ GURU : memiliki_guru
     ORANG_TUA ||--o{ ANAK : memberi_persetujuan
     ANAK ||--o{ KONSUMSI : memiliki
     MENU ||--o{ KONSUMSI : dikonsumsi
@@ -205,6 +269,13 @@ erDiagram
     GIZI_STANDAR ||--o{ LAPORAN : acuan_standar
     MENU ||--o{ MENU_ALTERNATIF : menu_utama
     MENU ||--o{ MENU_ALTERNATIF : menu_alternatif
+    SEKOLAH }o--o{ PERUSAHAAN_PENGANTARAN : bekerja_sama
+    PERUSAHAAN_PENGANTARAN ||--o{ KURIR : memiliki
+
+    SEKOLAH {
+        string kode_sekolah PK
+        string nama_sekolah
+    }
 
     ORANG_TUA {
         string kode_orang_tua PK
@@ -215,6 +286,7 @@ erDiagram
 
     ANAK {
         string kode_anak PK
+        string kode_sekolah FK
         string nama
         date tanggal_lahir
         string kelas
@@ -223,6 +295,7 @@ erDiagram
 
     GURU {
         string kode_guru PK
+        string kode_sekolah FK
         string nama
         string kelas_yang_diawasi
     }
@@ -276,6 +349,17 @@ erDiagram
         decimal lemak
         string catatan
     }
+
+    PERUSAHAAN_PENGANTARAN {
+        string kode_perusahaan PK
+        string nama_perusahaan
+    }
+
+    KURIR {
+        string kode_kurir PK
+        string kode_perusahaan FK
+        string nama_kurir
+    }
 ```
 
 ## Relasi yang Terbentuk
@@ -283,6 +367,10 @@ erDiagram
 Relasi yang digambar pada ERD:
 
 ```text
+SEKOLAH (1) ------ (N) ANAK
+
+SEKOLAH (1) ------ (N) GURU
+
 ORANG_TUA (1) ------ (N) ANAK
 
 ANAK (1) ------ (N) KONSUMSI
@@ -301,12 +389,19 @@ GIZI_STANDAR (1) ------ (N) LAPORAN
 
 MENU (M) ------ (N) MENU
         melalui MENU_ALTERNATIF
+
+SEKOLAH (M) ------ (N) PERUSAHAAN_PENGANTARAN
+        sebagai kerja sama pengantaran makanan
+
+PERUSAHAAN_PENGANTARAN (1) ------ (N) KURIR
 ```
 
 Dasar relasi:
 
 | Relasi | Dasar dari Studi Kasus | Catatan |
 |---|---|---|
+| SEKOLAH - ANAK | Program memantau anak-anak di beberapa TK/PAUD di satu kota. | Kaki bebek di sisi ANAK: satu sekolah memiliki banyak anak, satu anak berada pada satu sekolah. |
+| SEKOLAH - GURU | Guru mengawasi pemberian makanan di TK/PAUD tempat program berjalan. | Kaki bebek di sisi GURU: satu sekolah memiliki banyak guru, satu guru berada pada satu sekolah. |
 | ORANG_TUA - ANAK | Orang tua memberikan persetujuan dan menuliskan alergi anak; orang tua/wali memilih menu untuk siswa. | Relasi digambar di ERD konseptual, tetapi atribut `kode_orang_tua` tidak ditambahkan ke ANAK karena tidak ada pada daftar data anak. |
 | ANAK - KONSUMSI | Data konsumsi memiliki `kode_anak`. | FK eksplisit. |
 | MENU - KONSUMSI | Data konsumsi memiliki `kode_menu`. | FK eksplisit. |
@@ -315,6 +410,8 @@ Dasar relasi:
 | ANAK - LAPORAN | Data laporan memiliki `kode_anak`. | FK eksplisit. |
 | GIZI_STANDAR - LAPORAN | Sistem membandingkan konsumsi/total gizi anak dengan standar gizi. | Relasi konseptual sebagai acuan standar; tidak menambah FK karena daftar data tidak menyebut FK. |
 | MENU - MENU_ALTERNATIF | Data menu alternatif berisi `kode_menu` dan `kode_menu_alternatif`. | FK eksplisit ke MENU. |
+| SEKOLAH - PERUSAHAAN_PENGANTARAN | Sekolah bekerja sama dengan perusahaan pengantaran makanan. | Kaki bebek di kedua sisi: satu sekolah bisa bekerja sama dengan banyak perusahaan, satu perusahaan bisa bekerja sama dengan banyak sekolah. |
+| PERUSAHAAN_PENGANTARAN - KURIR | Pengantaran dilakukan oleh kurir dari perusahaan pengantaran. | Kaki bebek di sisi KURIR: satu perusahaan memiliki banyak kurir, satu kurir berada pada satu perusahaan. |
 
 ## Pemetaan ERD ke Tabel Relasional
 
@@ -331,14 +428,17 @@ Setiap entitas/data utama pada studi kasus dipetakan menjadi tabel relasional.
 
 | No | Entitas ERD | Hasil Pemetaan Tabel |
 |---:|---|---|
-| 1 | ORANG_TUA | ORANG_TUA(`kode_orang_tua`, `nama`, `kontak`, `persetujuan_pemberian_makanan`) |
-| 2 | ANAK | ANAK(`kode_anak`, `nama`, `tanggal_lahir`, `kelas`, `alergi`) |
-| 3 | GURU | GURU(`kode_guru`, `nama`, `kelas_yang_diawasi`) |
-| 4 | MENU | MENU(`kode_menu`, `nama_makanan`, `kalori`, `protein`, `karbohidrat`, `lemak`) |
-| 5 | KONSUMSI | KONSUMSI(`kode_konsumsi`, `kode_anak`, `kode_menu`, `tanggal`, `jumlah_porsi`, `catatan_guru`) |
-| 6 | GIZI_STANDAR | GIZI_STANDAR(`kode_gizi`, `kalori_harian`, `protein`, `karbohidrat`, `lemak`) |
-| 7 | JADWAL_GURU | JADWAL_GURU(`kode_jadwal`, `kode_guru`, `kelas`, `tanggal`, `shift_pengawasan`) |
-| 8 | LAPORAN | LAPORAN(`kode_laporan`, `tanggal`, `kode_anak`, `total_kalori`, `protein`, `karbohidrat`, `lemak`, `catatan`) |
+| 1 | SEKOLAH | SEKOLAH(`kode_sekolah`, `nama_sekolah`) |
+| 2 | ORANG_TUA | ORANG_TUA(`kode_orang_tua`, `nama`, `kontak`, `persetujuan_pemberian_makanan`) |
+| 3 | ANAK | ANAK(`kode_anak`, `kode_sekolah`, `nama`, `tanggal_lahir`, `kelas`, `alergi`) |
+| 4 | GURU | GURU(`kode_guru`, `kode_sekolah`, `nama`, `kelas_yang_diawasi`) |
+| 5 | MENU | MENU(`kode_menu`, `nama_makanan`, `kalori`, `protein`, `karbohidrat`, `lemak`) |
+| 6 | KONSUMSI | KONSUMSI(`kode_konsumsi`, `kode_anak`, `kode_menu`, `tanggal`, `jumlah_porsi`, `catatan_guru`) |
+| 7 | GIZI_STANDAR | GIZI_STANDAR(`kode_gizi`, `kalori_harian`, `protein`, `karbohidrat`, `lemak`) |
+| 8 | JADWAL_GURU | JADWAL_GURU(`kode_jadwal`, `kode_guru`, `kelas`, `tanggal`, `shift_pengawasan`) |
+| 9 | LAPORAN | LAPORAN(`kode_laporan`, `tanggal`, `kode_anak`, `total_kalori`, `protein`, `karbohidrat`, `lemak`, `catatan`) |
+| 10 | PERUSAHAAN_PENGANTARAN | PERUSAHAAN_PENGANTARAN(`kode_perusahaan`, `nama_perusahaan`) |
+| 11 | KURIR | KURIR(`kode_kurir`, `kode_perusahaan`, `nama_kurir`) |
 
 Catatan:
 
@@ -353,10 +453,13 @@ Pada relasi 1:N yang memiliki atribut FK eksplisit, PK dari entitas sisi 1 dilet
 
 | No | Relasi ERD | Aturan Pemetaan | Hasil FK |
 |---:|---|---|---|
-| 1 | ANAK (1) ke KONSUMSI (N) | PK ANAK masuk ke KONSUMSI | KONSUMSI.`kode_anak` -> ANAK.`kode_anak` |
-| 2 | MENU (1) ke KONSUMSI (N) | PK MENU masuk ke KONSUMSI | KONSUMSI.`kode_menu` -> MENU.`kode_menu` |
-| 3 | GURU (1) ke JADWAL_GURU (N) | PK GURU masuk ke JADWAL_GURU | JADWAL_GURU.`kode_guru` -> GURU.`kode_guru` |
-| 4 | ANAK (1) ke LAPORAN (N) | PK ANAK masuk ke LAPORAN | LAPORAN.`kode_anak` -> ANAK.`kode_anak` |
+| 1 | SEKOLAH (1) ke ANAK (N) | PK SEKOLAH masuk ke ANAK | ANAK.`kode_sekolah` -> SEKOLAH.`kode_sekolah` |
+| 2 | SEKOLAH (1) ke GURU (N) | PK SEKOLAH masuk ke GURU | GURU.`kode_sekolah` -> SEKOLAH.`kode_sekolah` |
+| 3 | ANAK (1) ke KONSUMSI (N) | PK ANAK masuk ke KONSUMSI | KONSUMSI.`kode_anak` -> ANAK.`kode_anak` |
+| 4 | MENU (1) ke KONSUMSI (N) | PK MENU masuk ke KONSUMSI | KONSUMSI.`kode_menu` -> MENU.`kode_menu` |
+| 5 | GURU (1) ke JADWAL_GURU (N) | PK GURU masuk ke JADWAL_GURU | JADWAL_GURU.`kode_guru` -> GURU.`kode_guru` |
+| 6 | ANAK (1) ke LAPORAN (N) | PK ANAK masuk ke LAPORAN | LAPORAN.`kode_anak` -> ANAK.`kode_anak` |
+| 7 | PERUSAHAAN_PENGANTARAN (1) ke KURIR (N) | PK PERUSAHAAN_PENGANTARAN masuk ke KURIR | KURIR.`kode_perusahaan` -> PERUSAHAAN_PENGANTARAN.`kode_perusahaan` |
 
 ### 3. Pemetaan Relasi Binary M:N
 
@@ -366,6 +469,7 @@ Pada relasi M:N, dibuat tabel penghubung yang berisi PK dari kedua sisi relasi. 
 |---|---|---|---|
 | ANAK (M) ke MENU (N) | KONSUMSI(`kode_konsumsi`, `kode_anak`, `kode_menu`, `tanggal`, `jumlah_porsi`, `catatan_guru`) | `kode_konsumsi` | `kode_anak` -> ANAK.`kode_anak`, `kode_menu` -> MENU.`kode_menu` |
 | MENU (M) ke MENU (N) | MENU_ALTERNATIF(`kode_menu`, `kode_menu_alternatif`) | (`kode_menu`, `kode_menu_alternatif`) | `kode_menu` -> MENU.`kode_menu`, `kode_menu_alternatif` -> MENU.`kode_menu` |
+| SEKOLAH (M) ke PERUSAHAAN_PENGANTARAN (N) | Relasi konseptual `bekerja_sama` | - | Jika dipetakan ke SQL fisik, perlu tabel bridge `KERJA_SAMA_PENGANTARAN(kode_sekolah, kode_perusahaan)`. |
 
 ### 4. Pemetaan yang Tidak Dilakukan
 
@@ -378,7 +482,7 @@ Bagian ini tidak dipetakan menjadi tabel/FK inti karena daftar data studi kasus 
 | Sistem mengetahui siapa yang memilihkan menu | Tidak ada atribut orang tua pemilih dan tidak ada tabel transaksi pemilihan menu. |
 | JADWAL_GURU berelasi dengan ANAK berdasarkan kelas | Tidak ada tabel KELAS; kelas hanya atribut pada ANAK, GURU, dan JADWAL_GURU. |
 | GIZI_STANDAR dipakai sebagai pembanding LAPORAN | Tidak ada FK dari GIZI_STANDAR ke ANAK, KELAS, KONSUMSI, atau LAPORAN. |
-| Pengantaran makanan ke rumah siswa | Tidak ada data alamat, kurir, perusahaan pengantaran, atau status pengantaran. |
+| Detail transaksi pengantaran makanan ke rumah siswa | Entitas `KURIR` dan `PERUSAHAAN_PENGANTARAN` sudah ditambahkan, tetapi transaksi pengantaran per anak belum dibuat agar tambahan tetap dibatasi. |
 
 ## Tabel Relasional
 
@@ -386,15 +490,18 @@ Tabel relasional berikut dibuat dari entitas dan FK yang tersedia pada daftar da
 
 | No | Relasi | Primary Key | Foreign Key | Atribut Non-Key |
 |---:|---|---|---|---|
-| 1 | ORANG_TUA(`kode_orang_tua`, `nama`, `kontak`, `persetujuan_pemberian_makanan`) | `kode_orang_tua` | - | `nama`, `kontak`, `persetujuan_pemberian_makanan` |
-| 2 | ANAK(`kode_anak`, `nama`, `tanggal_lahir`, `kelas`, `alergi`) | `kode_anak` | - | `nama`, `tanggal_lahir`, `kelas`, `alergi` |
-| 3 | GURU(`kode_guru`, `nama`, `kelas_yang_diawasi`) | `kode_guru` | - | `nama`, `kelas_yang_diawasi` |
-| 4 | MENU(`kode_menu`, `nama_makanan`, `kalori`, `protein`, `karbohidrat`, `lemak`) | `kode_menu` | - | `nama_makanan`, `kalori`, `protein`, `karbohidrat`, `lemak` |
-| 5 | KONSUMSI(`kode_konsumsi`, `kode_anak`, `kode_menu`, `tanggal`, `jumlah_porsi`, `catatan_guru`) | `kode_konsumsi` | `kode_anak` -> ANAK.`kode_anak`, `kode_menu` -> MENU.`kode_menu` | `tanggal`, `jumlah_porsi`, `catatan_guru` |
-| 6 | GIZI_STANDAR(`kode_gizi`, `kalori_harian`, `protein`, `karbohidrat`, `lemak`) | `kode_gizi` | - | `kalori_harian`, `protein`, `karbohidrat`, `lemak` |
-| 7 | MENU_ALTERNATIF(`kode_menu`, `kode_menu_alternatif`) | (`kode_menu`, `kode_menu_alternatif`) | `kode_menu` -> MENU.`kode_menu`, `kode_menu_alternatif` -> MENU.`kode_menu` | - |
-| 8 | JADWAL_GURU(`kode_jadwal`, `kode_guru`, `kelas`, `tanggal`, `shift_pengawasan`) | `kode_jadwal` | `kode_guru` -> GURU.`kode_guru` | `kelas`, `tanggal`, `shift_pengawasan` |
-| 9 | LAPORAN(`kode_laporan`, `tanggal`, `kode_anak`, `total_kalori`, `protein`, `karbohidrat`, `lemak`, `catatan`) | `kode_laporan` | `kode_anak` -> ANAK.`kode_anak` | `tanggal`, `total_kalori`, `protein`, `karbohidrat`, `lemak`, `catatan` |
+| 1 | SEKOLAH(`kode_sekolah`, `nama_sekolah`) | `kode_sekolah` | - | `nama_sekolah` |
+| 2 | ORANG_TUA(`kode_orang_tua`, `nama`, `kontak`, `persetujuan_pemberian_makanan`) | `kode_orang_tua` | - | `nama`, `kontak`, `persetujuan_pemberian_makanan` |
+| 3 | ANAK(`kode_anak`, `kode_sekolah`, `nama`, `tanggal_lahir`, `kelas`, `alergi`) | `kode_anak` | `kode_sekolah` -> SEKOLAH.`kode_sekolah` | `nama`, `tanggal_lahir`, `kelas`, `alergi` |
+| 4 | GURU(`kode_guru`, `kode_sekolah`, `nama`, `kelas_yang_diawasi`) | `kode_guru` | `kode_sekolah` -> SEKOLAH.`kode_sekolah` | `nama`, `kelas_yang_diawasi` |
+| 5 | MENU(`kode_menu`, `nama_makanan`, `kalori`, `protein`, `karbohidrat`, `lemak`) | `kode_menu` | - | `nama_makanan`, `kalori`, `protein`, `karbohidrat`, `lemak` |
+| 6 | KONSUMSI(`kode_konsumsi`, `kode_anak`, `kode_menu`, `tanggal`, `jumlah_porsi`, `catatan_guru`) | `kode_konsumsi` | `kode_anak` -> ANAK.`kode_anak`, `kode_menu` -> MENU.`kode_menu` | `tanggal`, `jumlah_porsi`, `catatan_guru` |
+| 7 | GIZI_STANDAR(`kode_gizi`, `kalori_harian`, `protein`, `karbohidrat`, `lemak`) | `kode_gizi` | - | `kalori_harian`, `protein`, `karbohidrat`, `lemak` |
+| 8 | MENU_ALTERNATIF(`kode_menu`, `kode_menu_alternatif`) | (`kode_menu`, `kode_menu_alternatif`) | `kode_menu` -> MENU.`kode_menu`, `kode_menu_alternatif` -> MENU.`kode_menu` | - |
+| 9 | JADWAL_GURU(`kode_jadwal`, `kode_guru`, `kelas`, `tanggal`, `shift_pengawasan`) | `kode_jadwal` | `kode_guru` -> GURU.`kode_guru` | `kelas`, `tanggal`, `shift_pengawasan` |
+| 10 | LAPORAN(`kode_laporan`, `tanggal`, `kode_anak`, `total_kalori`, `protein`, `karbohidrat`, `lemak`, `catatan`) | `kode_laporan` | `kode_anak` -> ANAK.`kode_anak` | `tanggal`, `total_kalori`, `protein`, `karbohidrat`, `lemak`, `catatan` |
+| 11 | PERUSAHAAN_PENGANTARAN(`kode_perusahaan`, `nama_perusahaan`) | `kode_perusahaan` | - | `nama_perusahaan` |
+| 12 | KURIR(`kode_kurir`, `kode_perusahaan`, `nama_kurir`) | `kode_kurir` | `kode_perusahaan` -> PERUSAHAAN_PENGANTARAN.`kode_perusahaan` | `nama_kurir` |
 
 Catatan:
 
@@ -408,15 +515,18 @@ Mengacu pada materi Chapter 14, functional dependency digunakan untuk menjelaska
 
 | No | Relasi | Functional Dependency | Keterangan |
 |---:|---|---|---|
-| 1 | ORANG_TUA | `kode_orang_tua` -> `nama`, `kontak`, `persetujuan_pemberian_makanan` | Satu kode orang tua menentukan data orang tua. |
-| 2 | ANAK | `kode_anak` -> `nama`, `tanggal_lahir`, `kelas`, `alergi` | Satu kode anak menentukan data anak. |
-| 3 | GURU | `kode_guru` -> `nama`, `kelas_yang_diawasi` | Satu kode guru menentukan data guru. |
-| 4 | MENU | `kode_menu` -> `nama_makanan`, `kalori`, `protein`, `karbohidrat`, `lemak` | Satu kode menu menentukan nama makanan dan nilai gizi per porsi. |
-| 5 | KONSUMSI | `kode_konsumsi` -> `kode_anak`, `kode_menu`, `tanggal`, `jumlah_porsi`, `catatan_guru` | Satu kode konsumsi menentukan data konsumsi harian. |
-| 6 | GIZI_STANDAR | `kode_gizi` -> `kalori_harian`, `protein`, `karbohidrat`, `lemak` | Satu kode gizi menentukan standar gizi. |
-| 7 | MENU_ALTERNATIF | (`kode_menu`, `kode_menu_alternatif`) -> seluruh atribut relasi | Composite key menentukan satu pasangan menu utama dan menu alternatif. |
-| 8 | JADWAL_GURU | `kode_jadwal` -> `kode_guru`, `kelas`, `tanggal`, `shift_pengawasan` | Satu kode jadwal menentukan guru, kelas, tanggal, dan shift pengawasan. |
-| 9 | LAPORAN | `kode_laporan` -> `tanggal`, `kode_anak`, `total_kalori`, `protein`, `karbohidrat`, `lemak`, `catatan` | Satu kode laporan menentukan isi laporan gizi anak. |
+| 1 | SEKOLAH | `kode_sekolah` -> `nama_sekolah` | Satu kode sekolah menentukan data sekolah. |
+| 2 | ORANG_TUA | `kode_orang_tua` -> `nama`, `kontak`, `persetujuan_pemberian_makanan` | Satu kode orang tua menentukan data orang tua. |
+| 3 | ANAK | `kode_anak` -> `kode_sekolah`, `nama`, `tanggal_lahir`, `kelas`, `alergi` | Satu kode anak menentukan data anak dan sekolahnya. |
+| 4 | GURU | `kode_guru` -> `kode_sekolah`, `nama`, `kelas_yang_diawasi` | Satu kode guru menentukan data guru dan sekolahnya. |
+| 5 | MENU | `kode_menu` -> `nama_makanan`, `kalori`, `protein`, `karbohidrat`, `lemak` | Satu kode menu menentukan nama makanan dan nilai gizi per porsi. |
+| 6 | KONSUMSI | `kode_konsumsi` -> `kode_anak`, `kode_menu`, `tanggal`, `jumlah_porsi`, `catatan_guru` | Satu kode konsumsi menentukan data konsumsi harian. |
+| 7 | GIZI_STANDAR | `kode_gizi` -> `kalori_harian`, `protein`, `karbohidrat`, `lemak` | Satu kode gizi menentukan standar gizi. |
+| 8 | MENU_ALTERNATIF | (`kode_menu`, `kode_menu_alternatif`) -> seluruh atribut relasi | Composite key menentukan satu pasangan menu utama dan menu alternatif. |
+| 9 | JADWAL_GURU | `kode_jadwal` -> `kode_guru`, `kelas`, `tanggal`, `shift_pengawasan` | Satu kode jadwal menentukan guru, kelas, tanggal, dan shift pengawasan. |
+| 10 | LAPORAN | `kode_laporan` -> `tanggal`, `kode_anak`, `total_kalori`, `protein`, `karbohidrat`, `lemak`, `catatan` | Satu kode laporan menentukan isi laporan gizi anak. |
+| 11 | PERUSAHAAN_PENGANTARAN | `kode_perusahaan` -> `nama_perusahaan` | Satu kode perusahaan menentukan data perusahaan pengantaran. |
+| 12 | KURIR | `kode_kurir` -> `kode_perusahaan`, `nama_kurir` | Satu kode kurir menentukan data kurir dan perusahaan tempat kurir berada. |
 
 FD yang tidak diasumsikan:
 
@@ -437,6 +547,7 @@ Normalisasi dilakukan berdasarkan konsep Chapter 14:
 
 | Relasi | Status 1NF | Alasan |
 |---|---|---|
+| SEKOLAH | Memenuhi 1NF | Semua atribut bernilai tunggal. |
 | ORANG_TUA | Memenuhi 1NF | Semua atribut bernilai tunggal sesuai daftar data. |
 | ANAK | Memenuhi 1NF | `alergi` diperlakukan sebagai satu atribut atomik sesuai daftar data. |
 | GURU | Memenuhi 1NF | Semua atribut bernilai tunggal sesuai daftar data. |
@@ -446,6 +557,8 @@ Normalisasi dilakukan berdasarkan konsep Chapter 14:
 | MENU_ALTERNATIF | Memenuhi 1NF | Setiap baris hanya menyimpan satu pasangan menu dan menu alternatif. |
 | JADWAL_GURU | Memenuhi 1NF | Jadwal disimpan per baris jadwal. |
 | LAPORAN | Memenuhi 1NF | Total gizi dan catatan laporan disimpan sebagai atribut atomik. |
+| PERUSAHAAN_PENGANTARAN | Memenuhi 1NF | Semua atribut bernilai tunggal. |
+| KURIR | Memenuhi 1NF | Satu baris menyimpan satu kurir dan perusahaan asalnya. |
 
 Catatan:
 
@@ -456,6 +569,7 @@ Catatan:
 
 | Relasi | Status 2NF | Alasan |
 |---|---|---|
+| SEKOLAH | Memenuhi 2NF | PK tunggal, sehingga tidak ada partial dependency. |
 | ORANG_TUA | Memenuhi 2NF | PK tunggal, sehingga tidak ada partial dependency. |
 | ANAK | Memenuhi 2NF | PK tunggal, sehingga tidak ada partial dependency. |
 | GURU | Memenuhi 2NF | PK tunggal, sehingga tidak ada partial dependency. |
@@ -465,20 +579,25 @@ Catatan:
 | MENU_ALTERNATIF | Memenuhi 2NF | PK komposit, tetapi tidak memiliki atribut non-key, sehingga tidak ada partial dependency. |
 | JADWAL_GURU | Memenuhi 2NF | PK tunggal, sehingga tidak ada partial dependency. |
 | LAPORAN | Memenuhi 2NF | PK tunggal, sehingga tidak ada partial dependency. |
+| PERUSAHAAN_PENGANTARAN | Memenuhi 2NF | PK tunggal, sehingga tidak ada partial dependency. |
+| KURIR | Memenuhi 2NF | PK tunggal, sehingga tidak ada partial dependency. |
 
 ### Pemeriksaan 3NF
 
 | Relasi | Status 3NF | Alasan |
 |---|---|---|
+| SEKOLAH | Memenuhi 3NF | `nama_sekolah` bergantung langsung pada `kode_sekolah`. |
 | ORANG_TUA | Memenuhi 3NF | Tidak ada FD eksplisit antar atribut non-key. |
 | ANAK | Memenuhi 3NF | Tidak ada FD eksplisit antar atribut non-key. |
-| GURU | Memenuhi 3NF | Tidak ada FD eksplisit antar atribut non-key. |
+| GURU | Memenuhi 3NF | Detail sekolah tidak dicampur ke guru; guru hanya menyimpan `kode_sekolah` sebagai FK. |
 | MENU | Memenuhi 3NF | Nilai gizi bergantung pada `kode_menu`, bukan pada atribut non-key lain. |
 | KONSUMSI | Memenuhi 3NF | Data anak dan menu hanya direferensikan dengan FK, bukan dicampur ke tabel konsumsi. |
 | GIZI_STANDAR | Memenuhi 3NF | Tidak ada FD eksplisit antar atribut non-key. |
 | MENU_ALTERNATIF | Memenuhi 3NF | Tidak memiliki atribut non-key. |
 | JADWAL_GURU | Memenuhi 3NF | Detail guru tidak dicampur ke jadwal; jadwal hanya menyimpan `kode_guru` sebagai FK. |
 | LAPORAN | Memenuhi 3NF | Data anak tidak dicampur ke laporan; laporan hanya menyimpan `kode_anak` sebagai FK. |
+| PERUSAHAAN_PENGANTARAN | Memenuhi 3NF | `nama_perusahaan` bergantung langsung pada `kode_perusahaan`. |
+| KURIR | Memenuhi 3NF | Detail perusahaan tidak dicampur ke kurir; kurir hanya menyimpan `kode_perusahaan` sebagai FK. |
 
 Kesimpulan normalisasi:
 
@@ -625,13 +744,13 @@ Masalah pada ERD inti:
 
 - Tidak ada data siswa tidak masuk.
 - Tidak ada data alamat siswa.
-- Tidak ada data kurir.
-- Tidak ada data perusahaan pengantaran.
+- Data kurir dan perusahaan pengantaran sudah ditambahkan pada revisi ini.
+- Belum ada tabel transaksi pengantaran makanan per anak.
 - Tidak ada data status pengantaran.
 
 Jawaban aman saat sidang:
 
-> Pengantaran makanan disebut pada narasi, tetapi daftar data belum menyediakan entitas dan atribut untuk pengantaran. Karena itu bagian pengantaran tidak dimasukkan ke ERD inti. Jika menjadi ruang lingkup implementasi, perluasan requirement harus mencakup data alamat, kurir, perusahaan pengantaran, dan status pengantaran.
+> Pengantaran makanan disebut pada narasi. Pada revisi ini, ERD sudah menambahkan KURIR dan PERUSAHAAN_PENGANTARAN karena keduanya disebut langsung pada narasi. Namun, transaksi pengantaran per anak belum dibuat karena belum ada data eksplisit seperti status pengantaran, tanggal kirim, atau alamat tujuan pada daftar data inti.
 
 ### TK/PAUD, Kelas, dan Batas Maksimal Siswa
 
@@ -643,23 +762,27 @@ Narasi:
 
 Masalah pada ERD inti:
 
-- Tidak ada tabel TK/PAUD.
+- Tabel `SEKOLAH` sudah ditambahkan untuk mewakili TK/PAUD.
 - Tidak ada tabel KELAS.
 - Kelas hanya muncul sebagai atribut teks pada ANAK, GURU, dan JADWAL_GURU.
 - Tidak ada atribut atau relasi untuk memvalidasi maksimal 8 siswa dan dua guru per kelas.
 
 Jawaban aman saat sidang:
 
-> Informasi TK/PAUD dan aturan jumlah siswa/guru disebut pada narasi, tetapi daftar data belum menyediakan tabel TK/PAUD atau KELAS. Maka aturan tersebut dapat dijelaskan sebagai business rule, bukan relasi ERD inti.
+> Informasi TK/PAUD sudah diwakili oleh entitas SEKOLAH pada revisi ini. Namun, aturan maksimal 8 siswa dan dua guru per kelas belum bisa divalidasi penuh karena ERD inti masih memakai `kelas` sebagai atribut teks, belum sebagai entitas KELAS.
 
 ## Kesimpulan
 
-ERD inti yang paling aman berdasarkan daftar data eksplisit adalah:
+ERD revisi yang paling aman berdasarkan daftar data eksplisit ditambah tiga entitas narasi pengantaran/sekolah adalah:
 
 - KONSUMSI terhubung ke ANAK dan MENU.
+- SEKOLAH terhubung ke ANAK.
+- SEKOLAH terhubung ke GURU.
 - JADWAL_GURU terhubung ke GURU.
 - LAPORAN terhubung ke ANAK.
 - MENU_ALTERNATIF menjadi bridge table dari MENU ke MENU.
+- PERUSAHAAN_PENGANTARAN terhubung ke KURIR.
+- SEKOLAH dan PERUSAHAAN_PENGANTARAN memiliki relasi kerja sama M:N secara konseptual.
 - ORANG_TUA dan GIZI_STANDAR belum memiliki FK eksplisit.
 
 Jika dosen meminta ERD yang memenuhi semua narasi, maka perlu ada perluasan requirement. Perluasan tersebut harus ditandai sebagai pengembangan, bukan sebagai data yang sudah eksplisit tersedia pada studi kasus.
