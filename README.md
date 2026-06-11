@@ -258,8 +258,8 @@ Catatan membaca diagram:
 
 ```mermaid
 erDiagram
+    SEKOLAH ||--|{ GURU : memiliki_guru
     SEKOLAH ||--o{ ANAK : memiliki_siswa
-    SEKOLAH ||--o{ GURU : memiliki_guru
     ORANG_TUA ||--o{ ANAK : memberi_persetujuan
     ANAK ||--o{ KONSUMSI : memiliki
     MENU ||--o{ KONSUMSI : dikonsumsi
@@ -269,8 +269,8 @@ erDiagram
     GIZI_STANDAR ||--o{ LAPORAN : acuan_standar
     MENU ||--o{ MENU_ALTERNATIF : menu_utama
     MENU ||--o{ MENU_ALTERNATIF : menu_alternatif
-    SEKOLAH }o--o{ PERUSAHAAN_PENGANTARAN : bekerja_sama
-    PERUSAHAAN_PENGANTARAN ||--o{ KURIR : memiliki
+    PERUSAHAAN_PENGANTARAN }o--o{ SEKOLAH : bekerja_sama
+    PERUSAHAAN_PENGANTARAN ||--|{ KURIR : memiliki
 
     SEKOLAH {
         string kode_sekolah PK
