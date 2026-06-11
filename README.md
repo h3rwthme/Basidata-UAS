@@ -269,7 +269,7 @@ erDiagram
     GIZI_STANDAR ||--o{ LAPORAN : acuan_standar
     MENU ||--o{ MENU_ALTERNATIF : menu_utama
     MENU ||--o{ MENU_ALTERNATIF : menu_alternatif
-    PERUSAHAAN_PENGANTARAN }o--o{ SEKOLAH : bekerja_sama
+    SEKOLAH }o--o{ PERUSAHAAN_PENGANTARAN : bekerja_sama
     PERUSAHAAN_PENGANTARAN ||--|{ KURIR : memiliki
 
     SEKOLAH {
